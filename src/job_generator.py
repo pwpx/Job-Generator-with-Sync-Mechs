@@ -7,9 +7,14 @@ def generate_small_job_queue():
     job_queue = []
     for user in users:
         arrival_time = 0
-        for _ in range(3):
+        for _ in range(10):
             job_type = random.choice(job_types)
-            pages = random.randint(1, 5)
+            if random.random() < 0.33:
+                pages = random.randint(1, 5)
+            elif random.random() < 0.5:
+                pages = random.randint(6, 15)
+            else:
+                pages = random.randint(16, 50)
             arrival_time += random.randint(1, 5)
             job_queue.append(Job(user, job_type, pages, arrival_time))
     job_queue.sort(key=lambda job: job.arrival_time)

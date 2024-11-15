@@ -27,7 +27,7 @@ def run_jobs_unsynchronized(jobs):
     global total_processed_pages
     total_processed_pages = 0
     threads = []
-    for job in jobs:
+    for job in jobs:    
         job.arrival_time = random.randint(1, 5)
         t = threading.Thread(target=execute_job, args=(job,))
         threads.append(t)
