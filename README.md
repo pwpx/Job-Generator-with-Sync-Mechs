@@ -1,111 +1,187 @@
-# Process Synchronization Assignment
+# Process Synchronization Assignment - Solution
 
 ## Objective
-The purpose of this assignment is to help you understand and implement process synchronization mechanisms to prevent race conditions, deadlocks, and incorrect outputs when multiple users attempt to access shared resources (printer and scanner). You will begin by implementing a job generator that creates print and scan jobs at random times for each user, followed by two versions of job execution (one without synchronization and one with synchronization).
 
-## Scenario Description
-In a shared office environment, there are five users (P1 to P5), each requiring access to shared resources:
-1. **Printer**
-2. **Scanner**
+They idea of our project is to simulate a shared office environment where five users (P1 to P5) require access to shared resources: a printer and a scanner. Each user needs to perform 10 jobs, which include both print and scan tasks. Jobs have varying lengths based on the number of pages:
 
-Each user needs to perform 10 jobs, which include both print and scan tasks. Jobs have varying lengths based on the number of pages:
-- **Short Job**: 1-5 pages
-- **Medium Job**: 6-15 pages
-- **Large Job**: 16-50 pages
+## Part 1. Job Generator
 
-Each page takes 1 second to process. Jobs are pre-emptive, allowing them to be switched mid-process after a page is completed with a time slice of 2 seconds. No other job can interrupt a job mid-page, but once a page completes, another job can be scheduled if necessary. Assume that the longest waiting job first scheduler will be implemented for each resource.
+We created a Job Generator that randomly creates 10 jobs for each of the five users (P1 to P5). Each job is randomly assigned as either a print or scan job and has a random length (short, medium, or large). We simulate random arrival times for each job, where the next job for each user arrives after a random interval (e.g., between 1 to 5 seconds).
 
-## Assignment Structure
+## Part 2. Task Implementation
 
-### Part 1: Job Generator
+### Task 1: Without Synchronization
 
-1. **Job Creation**:
-   - Write a job generator that randomly creates 10 jobs for each of the five users (P1 to P5).
-   - Each job should be randomly assigned as either a print or scan job and should have a random length (short, medium, or large).
-   
-2. **Random Arrival Times**:
-   - The jobs for each user should be generated at random times.
-   - Simulate random arrival times for each job, where the next job for each user arrives after a random interval (e.g., between 1 to 5 seconds).
-   
-3. **Job Output Format**:
-   - Each job should have the following details:
-     - **User**: Which user created the job (P1 to P5).
-     - **Job Type**: Print or scan.
-     - **Length**: Number of pages (short, medium, or large).
-     - **Arrival Time**: The time when the job is generated (or intended to start).
+We implemented job execution for the generated job queue without using any synchronization mechanisms. We allowed users to access the printer and scanner simultaneously, potentially.
 
-4. **Log Job Queue**:
-   - Store all generated jobs in a job queue or a log, displaying the details of each job.
+The idea of this method is to show the problems that can occur when multiple users try to access shared resources without any synchronization mechanisms.
 
-**Example Job Queue Output**:
+### Code
+
+```python
+def process_job(job):
+    global total_processed_pages
+    for page in range(1, job.pages + 1):
+        try:
+            time.sleep(1)
+            with total_pages_lock:
+                total_processed_pages += 1
+                log_job_progress(job.user, job.job_type, job.pages, page, job.arrival_time, f"(No Sync) | Total Processed Pages: {total_processed_pages}")
+        except Exception as e:
+            log_job_progress(job.user, job.job_type, job.pages, page, job.arrival_time, f"(No Sync) - Job Interrupted: {str(e)}")
+
+def execute_job(job):
+    log_job_progress(job.user, job.job_type, job.pages, 0, job.arrival_time, "(No Sync) - Job Start")
+    process_job(job)
+    log_job_progress(job.user, job.job_type, job.pages, job.pages, job.arrival_time, "(No Sync) - Job Completed")
+
+def run_jobs_unsynchronized(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
+    threads = []
+    for job in jobs:
+        job.arrival_time = random.randint(1, 5)
+        t = threading.Thread(target=execute_job, args=(job,))
+        threads.append(t)
+        t.start()
+        time.sleep(job.arrival_time)
+
+    for t in threads:
+        t.join()
 ```
-User P1: Print Job, 5 pages, Arrival Time: 3 seconds
-User P2: Scan Job, 12 pages, Arrival Time: 5 seconds
-User P3: Print Job, 3 pages, Arrival Time: 7 seconds
-...
+
+### Output
+
+```
+[1731606016.3064065] P1 (Scan): Page 0/4 at Arrival Time 3 (No Sync) - Job Start
+[1731606017.3068378] P1 (Scan): Page 1/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 1
+[1731606018.3072708] P1 (Scan): Page 2/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 2
+[1731606019.3072076] P2 (Print): Page 0/4 at Arrival Time 4 (No Sync) - Job Start
+[1731606019.3077033] P1 (Scan): Page 3/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 3
+[1731606020.3076403] P2 (Print): Page 1/4 at Arrival Time 4 (No Sync) | Total Processed Pages: 4
+[1731606020.3081362] P1 (Scan): Page 4/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 5
+[1731606020.3081362] P1 (Scan): Page 4/4 at Arrival Time 3 (No Sync) - Job Completed
+
 ```
 
-### Part 2: Task Implementation
+Reviewing the output, we can see that the jobs are being processed concurrently without any synchronization. This is due to several issues:
 
-After generating the jobs, students will implement two versions of the process execution: one without synchronization and one with synchronization.
+### Deadlocks
 
-#### Task 1: Without Synchronization
+Deadlocks can occur when multiple jobs are waiting for resources held by others indefinitely. In this case, if one job is using the printer, another job cannot access the printer until the first job completes. This can lead to a deadlock situation where both jobs are waiting for each other to release
 
-1. **Job Execution**:
-   - Implement job execution for the generated job queue without using any synchronization mechanisms.
-   - Allow users to access the printer and scanner simultaneously, potentially resulting in race conditions and mixed outputs.
+### Race Conditions
 
-2. **Execution Constraints**:
-   - Each job can be pre-empted after a page is printed or scanned, allowing another job to be scheduled.
-   - However, no job should interrupt another mid-page.
+Race Conditions can occur when multiple users access the same resource simultaneously, leading to incorrect outputs or mixed results. In this case, multiple jobs are trying to access the printer and scanner at the same time, resulting in mixed outputs and potential errors.
 
-3. **Expected Issues**:
-   - **Race Conditions**: Multiple users may access the same resource simultaneously, leading to incorrect outputs or mixed results.
-   - **Deadlocks**: Potential for deadlock if multiple jobs wait for resources held by others indefinitely.
+### Task 2: With Synchronization
 
-4. **Output Format**:
-   - Log each job’s progress, showing page-by-page status, including any potential errors or inconsistencies caused by concurrent access.
+In the synchronized version, if a previous job has not completed printing or scanning, another job cannot be allowed to run in between due to ```resource_lock```. This means once a job has occupied a resource, it will only be used by the same job until its completion.
 
-#### Task 2: With Synchronization
+### Code
+    
+```python
+def process_job(job):
+    global total_processed_pages
+    time.sleep(job.arrival_time)
+    with resource_lock:
+        for page in range(1, job.pages + 1):
+            try:
+                time.sleep(1)
+                with total_pages_lock:
+                    total_processed_pages += 1
+                    log_job_progress(job.user, job.job_type, job.pages, page, job.arrival_time, f"(Sync) | Total Processed Pages: {total_processed_pages}")
+            except Exception as e:
+                log_job_progress(job.user, job.job_type, job.pages, page, job.arrival_time, f"(Sync) - Job Interrupted: {str(e)}")
 
-In the synchronized version, if a previous job has not completed printing or scanning, another job cannot be allowed to run in between, meaning once a job has occupied a resource, it will only be used by the same job until its completion.
+def execute_job(job):
+    log_job_progress(job.user, job.job_type, job.pages, 0, job.arrival_time, "(Sync) - Job Start")
+    process_job(job)
+    log_job_progress(job.user, job.job_type, job.pages, job.pages, job.arrival_time, "(Sync) - Job Completed")
 
-1. **Implement Synchronization Mechanisms in three separate codes**:
-   - Apply synchronization to prevent race conditions and deadlocks:
-     - Use **mutexes** to ensure exclusive access to the printer and scanner.
-     - Use **semaphores** to control job switching and prioritize or queue jobs.
-     - Implement **Peterson’s Solution** on one of the resources (e.g., printer) to demonstrate another way to achieve mutual exclusion.
+def run_jobs_synchronized(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
+    threads = []
+    for job in jobs:
+        job.arrival_time = random.randint(1, 5)
+        t = threading.Thread(target=execute_job, args=(job,))
+        threads.append(t)
+        t.start()
 
-2. **Job Execution**:
-   - Ensure each user’s job can access the resources without interfering with other jobs.
-   - Jobs should be allowed to switch only after a page is completed or when the job itself is complete.
+    for t in threads:
+        t.join()
+```
 
-3. **Pre-emptive Scheduling with Synchronization**:
-   - Allow job switching only at page boundaries.
-   - Ensure no two jobs run on the same resource simultaneously, preventing race conditions.
+### Output
+```
+1731680227.981762] P3 (Scan): Page 2/5 at Arrival Time 1 (Sync) | Total Processed Pages: 6
+[1731680228.9821935] P3 (Scan): Page 3/5 at Arrival Time 1 (Sync) | Total Processed Pages: 7
+[1731680229.9826224] P3 (Scan): Page 4/5 at Arrival Time 1 (Sync) | Total Processed Pages: 8
+[1731680230.9830532] P3 (Scan): Page 5/5 at Arrival Time 1 (Sync) | Total Processed Pages: 9
+[1731680230.9830532] P3 (Scan): Page 5/5 at Arrival Time 1 (Sync) - Job Completed
+[1731680231.983483] P4 (Print): Page 1/2 at Arrival Time 2 (Sync) | Total Processed Pages: 10
+[1731680232.988378] P4 (Print): Page 2/2 at Arrival Time 2 (Sync) | Total Processed Pages: 11
+[1731680232.988378] P4 (Print): Page 2/2 at Arrival Time 2 (Sync) - Job Completed
+```
 
-4. **Comparative Analysis of Synchronization Mechanisms**:
-   - **Mutexes**: Used for exclusive access to resources, preventing data inconsistencies.
-   - **Semaphores**: Manage multiple job requests in a controlled way, ensuring proper prioritization.
-   - **Peterson’s Solution**: Allows mutual exclusion for two processes at a time, demonstrating another approach to prevent interference.
+By looking at this output, we can see that the jobs are being processed sequentially due to the synchronization mechanism. This ensures that only one job can access the printer or scanner at a time, preventing race conditions and deadlocks.
 
-5. **Performance and Accuracy**:
-   - Record completion times for each job and compare the performance and accuracy of each synchronization mechanism.
+## Mutex Syncronization
 
-6. **Output Format**:
-   - Log each job’s status, showing which job and page is currently in progress, when it’s pre-empted, and when it’s complete.
+Mutex synchronization is a method to ensure exclusive access to shared resources. In this case, we use mutexes to ensure that only one job can access the printer or scanner at a time.
 
-## Deliverables
-A single zipped folder containing the following items:
-1. **Source Code**:
-   - Submit the source code for the job generator and both task implementations (without synchronization and with synchronization).
-   - Ensure each part of the code is well-documented.
-2. **Report**:
-   - **Job Generator**: Describe how jobs are generated and how random times are simulated.
-   - **Without Synchronization**: Document observed issues such as race conditions and deadlocks.
-   - **With Synchronization**: Explain the implementation of each synchronization mechanism and how it prevents race conditions and deadlocks.
-   - **Comparative Analysis**: Compare the performance and accuracy of mutexes, semaphores, and Peterson’s solution.
-3. **Testing and Results**:
-   - Run each version multiple times to observe consistency.
-   - Include output samples showing both the unsynchronized and synchronized versions.
-   - Record page-by-page status for each job, indicating when a job is pre-empted or switched.
+### Code
+
+```python
+def mutex_print_job(job):
+    global total_processed_pages
+    with printer_lock:
+        for page in range(1, job.pages + 1):
+            time.sleep(1)
+            with total_pages_lock:
+                total_processed_pages += 1
+                log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, f"(Mutex Sync) | Total Processed Pages: {total_processed_pages}")
+
+def mutex_scan_job(job):
+    global total_processed_pages
+    with scanner_lock:
+        for page in range(1, job.pages + 1):
+            time.sleep(1)
+            with total_pages_lock:
+                total_processed_pages += 1
+                log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, f"(Mutex Sync) | Total Processed Pages: {total_processed_pages}")
+
+def run_jobs_mutex(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
+    threads = []
+    for job in jobs:
+        if job.job_type == 'Print':
+            t = threading.Thread(target=mutex_print_job, args=(job,))
+        else:
+            t = threading.Thread(target=mutex_scan_job, args=(job,))
+        threads.append(t)
+        t.start()
+        time.sleep(job.arrival_time)
+
+    for t in threads:
+        t.join()
+```
+
+### Output
+
+```
+[1731680285.0360494] P2 (Print): Page 2/3 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 15
+[1731680285.0360494] P3 (Scan): Page 3/5 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 16
+[1731680286.0364795] P3 (Scan): Page 4/5 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 17
+[1731680286.0364795] P2 (Print): Page 3/3 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 18
+[1731680287.03691] P3 (Scan): Page 5/5 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 19
+[1731680288.0373404] P4 (Scan): Page 1/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 20
+[1731680289.0362825] P4 (Print): Page 1/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 21
+[1731680289.0377707] P4 (Scan): Page 2/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 22
+[1731680290.036713] P4 (Print): Page 2/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 23
+[1731680291.036647] P5 (Scan): Page 1/4 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 24
+[1731680292.0370777] P5 (Scan): Page 2/4 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 25
+```
+

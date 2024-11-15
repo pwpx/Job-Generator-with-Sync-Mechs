@@ -1,6 +1,4 @@
-﻿# logger.py
-
-import time
+﻿import time
 
 log = []
 
@@ -13,7 +11,7 @@ def log_job_progress(user, job_type, pages, current_page, arrival_time, sync_typ
     log_message = (f"[{timestamp}] {user} ({job_type}): Page {current_page}/{pages} "
                    f"at Arrival Time {arrival_time} {sync_type}")
     log.append(log_message)
-    print(log_message)  # Print in real-time
+    print(log_message)
 
 def display_log():
     print("\nJob Execution Log:")

@@ -1,26 +1,66 @@
-﻿# synchronized_execution.py
-
-import threading
+﻿import threading
 from models import Job
 from synchronization_utils import printer_lock, scanner_lock, switching_semaphore, peterson_flags, peterson_turn
 from logger import log_job_progress
 import time
+import random
 
-# Mutex Synchronization Implementation
+total_processed_pages = 0
+total_pages_lock = threading.Lock()
+resource_lock = threading.Lock()
+
+def process_job(job):
+    global total_processed_pages
+    time.sleep(job.arrival_time)
+    with resource_lock:
+        for page in range(1, job.pages + 1):
+            try:
+                time.sleep(1)
+                with total_pages_lock:
+                    total_processed_pages += 1
+                    log_job_progress(job.user, job.job_type, job.pages, page, job.arrival_time, f"(Sync) | Total Processed Pages: {total_processed_pages}")
+            except Exception as e:
+                log_job_progress(job.user, job.job_type, job.pages, page, job.arrival_time, f"(Sync) - Job Interrupted: {str(e)}")
+
+def execute_job(job):
+    log_job_progress(job.user, job.job_type, job.pages, 0, job.arrival_time, "(Sync) - Job Start")
+    process_job(job)
+    log_job_progress(job.user, job.job_type, job.pages, job.pages, job.arrival_time, "(Sync) - Job Completed")
+
+def run_jobs_synchronized(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
+    threads = []
+    for job in jobs:
+        job.arrival_time = random.randint(1, 5)
+        t = threading.Thread(target=execute_job, args=(job,))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
 
 def mutex_print_job(job):
+    global total_processed_pages
     with printer_lock:
         for page in range(1, job.pages + 1):
-            time.sleep(1)  # Simulate processing time per page
-            log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, "(Mutex Sync)")
+            time.sleep(1)
+            with total_pages_lock:
+                total_processed_pages += 1
+                log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, f"(Mutex Sync) | Total Processed Pages: {total_processed_pages}")
 
 def mutex_scan_job(job):
+    global total_processed_pages
     with scanner_lock:
         for page in range(1, job.pages + 1):
             time.sleep(1)
-            log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, "(Mutex Sync)")
+            with total_pages_lock:
+                total_processed_pages += 1
+                log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, f"(Mutex Sync) | Total Processed Pages: {total_processed_pages}")
 
 def run_jobs_mutex(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
     threads = []
     for job in jobs:
         if job.job_type == 'Print':
@@ -29,28 +69,34 @@ def run_jobs_mutex(jobs):
             t = threading.Thread(target=mutex_scan_job, args=(job,))
         threads.append(t)
         t.start()
-        time.sleep(job.arrival_time)  # Simulate job arrival
+        time.sleep(job.arrival_time)
 
     for t in threads:
         t.join()
 
-# Semaphore Synchronization Implementation
-
 def semaphore_print_job(job):
-    switching_semaphore.acquire()  # Wait for resource availability
-    for page in range(1, job.pages + 1):
-        time.sleep(1)
-        log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, "(Semaphore Sync)")
-    switching_semaphore.release()  # Release after job completes
-
-def semaphore_scan_job(job):
+    global total_processed_pages
     switching_semaphore.acquire()
     for page in range(1, job.pages + 1):
         time.sleep(1)
-        log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, "(Semaphore Sync)")
+        with total_pages_lock:
+            total_processed_pages += 1
+            log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, f"(Semaphore Sync) | Total Processed Pages: {total_processed_pages}")
+    switching_semaphore.release()
+
+def semaphore_scan_job(job):
+    global total_processed_pages
+    switching_semaphore.acquire()
+    for page in range(1, job.pages + 1):
+        time.sleep(1)
+        with total_pages_lock:
+            total_processed_pages += 1
+            log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, f"(Semaphore Sync) | Total Processed Pages: {total_processed_pages}")
     switching_semaphore.release()
 
 def run_jobs_semaphore(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
     threads = []
     for job in jobs:
         if job.job_type == 'Print':
@@ -59,49 +105,49 @@ def run_jobs_semaphore(jobs):
             t = threading.Thread(target=semaphore_scan_job, args=(job,))
         threads.append(t)
         t.start()
-        time.sleep(job.arrival_time)  # Simulate job arrival
+        time.sleep(job.arrival_time)
 
     for t in threads:
         t.join()
 
-# Peterson’s Solution Synchronization Implementation
-# This example uses Peterson's solution for the printer resource only, assuming two jobs are attempting to print.
-
 def peterson_print_job(job, user_id):
-    # Set up Peterson’s flags for mutual exclusion
+    global total_processed_pages
+
     other_user = 1 - user_id
     peterson_flags[user_id] = True
     peterson_turn[0] = other_user
 
-    # Peterson's Solution Entry Protocol
     while peterson_flags[other_user] and peterson_turn[0] == other_user:
-        pass  # Wait until the resource is free
+        pass
 
-    # Critical Section for Print Job
     for page in range(1, job.pages + 1):
-        time.sleep(1)  # Simulate processing time per page
-        log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, "(Peterson's Sync)")
+        time.sleep(1)
+        with total_pages_lock:
+            total_processed_pages += 1
+            log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, f"(Peterson's Sync) | Total Processed Pages: {total_processed_pages}")
 
-    # Exit Protocol
-    peterson_flags[user_id] = False  # Allow other user access
+    peterson_flags[user_id] = False
 
 def peterson_scan_job(job):
-    # Scanning will use a mutex lock here to keep the code structure similar
+    global total_processed_pages
+
     with scanner_lock:
         for page in range(1, job.pages + 1):
             time.sleep(1)
-            log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, "(Peterson's Sync)")
+            with total_pages_lock:
+                total_processed_pages += 1
+                log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, f"(Peterson's Sync) | Total Processed Pages: {total_processed_pages}")
 
 def run_jobs_peterson(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
     threads = []
     user_id = 0
     for job in jobs:
         if job.job_type == 'Print':
-
             t = threading.Thread(target=peterson_print_job, args=(job, user_id))
             user_id = 1 - user_id
         else:
-
             t = threading.Thread(target=peterson_scan_job, args=(job,))
         threads.append(t)
         t.start()
