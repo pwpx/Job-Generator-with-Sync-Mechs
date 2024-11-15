@@ -185,3 +185,135 @@ def run_jobs_mutex(jobs):
 [1731680292.0370777] P5 (Scan): Page 2/4 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 25
 ```
 
+## Semaphore Syncronization
+
+Semaphore synchronization is a method to control job switching and prioritize or queue jobs. In this case, we use semaphores to ensure that only one job can access the printer or scanner at a time.
+
+### Code
+
+```python
+def semaphore_print_job(job):
+    global total_processed_pages
+    switching_semaphore.acquire()
+    for page in range(1, job.pages + 1):
+        time.sleep(1)
+        with total_pages_lock:
+            total_processed_pages += 1
+            log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, f"(Semaphore Sync) | Total Processed Pages: {total_processed_pages}")
+    switching_semaphore.release()
+
+def semaphore_scan_job(job):
+    global total_processed_pages
+    switching_semaphore.acquire()
+    for page in range(1, job.pages + 1):
+        time.sleep(1)
+        with total_pages_lock:
+            total_processed_pages += 1
+            log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, f"(Semaphore Sync) | Total Processed Pages: {total_processed_pages}")
+    switching_semaphore.release()
+
+def run_jobs_semaphore(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
+    threads = []
+    for job in jobs:
+        if job.job_type == 'Print':
+            t = threading.Thread(target=semaphore_print_job, args=(job,))
+        else:
+            t = threading.Thread(target=semaphore_scan_job, args=(job,))
+        threads.append(t)
+        t.start()
+        time.sleep(job.arrival_time)
+
+    for t in threads:
+        t.join()
+```
+
+### Output
+```
+[1731683535.3165627] P2 (Print): Page 3/5 at Arrival Time 2 (Semaphore Sync) | Total Processed Pages: 3
+[1731683536.3328676] P2 (Print): Page 4/5 at Arrival Time 2 (Semaphore Sync) | Total Processed Pages: 4
+[1731683537.333297] P2 (Print): Page 5/5 at Arrival Time 2 (Semaphore Sync) | Total Processed Pages: 5
+[1731683538.3342218] P1 (Print): Page 1/5 at Arrival Time 5 (Semaphore Sync) | Total Processed Pages: 6
+[1731683539.334652] P1 (Print): Page 2/5 at Arrival Time 5 (Semaphore Sync) | Total Processed Pages: 7
+[1731683540.335082] P1 (Print): Page 3/5 at Arrival Time 5 (Semaphore Sync) | Total Processed Pages: 8
+[1731683541.3355126] P1 (Print): Page 4/5 at Arrival Time 5 (Semaphore Sync) | Total Processed Pages: 9
+[1731683542.335943] P1 (Print): Page 5/5 at Arrival Time 5 (Semaphore Sync) | Total Processed Pages: 10
+[1731683543.3363736] P3 (Scan): Page 1/2 at Arrival Time 5 (Semaphore Sync) | Total Processed Pages: 11
+```
+
+### Peterson's Synchronization algorithm
+
+Peterson's algorithm is a classic software-based solution for achieving mutual exclusion between two processes. It ensures that only one process can enter the critical section at a time, preventing race conditions. The algorithm uses two shared variables: ```flag``` and ```turn```.  
+### Key Concepts:
+
+* **Flags**: Each process has a flag that indicates whether it wants to enter the critical section.
+
+* **Turn**: A shared variable that indicates whose turn it is to enter the critical section.
+
+### Code
+
+```python
+def peterson_print_job(job, user_id):
+    global total_processed_pages
+
+    other_user = 1 - user_id
+    peterson_flags[user_id] = True
+    peterson_turn[0] = other_user
+
+    while peterson_flags[other_user] and peterson_turn[0] == other_user:
+        pass
+
+    for page in range(1, job.pages + 1):
+        time.sleep(1)
+        with total_pages_lock:
+            total_processed_pages += 1
+            log_job_progress(job.user, "Print", job.pages, page, job.arrival_time, f"(Peterson's Sync) | Total Processed Pages: {total_processed_pages}")
+
+    peterson_flags[user_id] = False
+
+def peterson_scan_job(job):
+    global total_processed_pages
+
+    with scanner_lock:
+        for page in range(1, job.pages + 1):
+            time.sleep(1)
+            with total_pages_lock:
+                total_processed_pages += 1
+                log_job_progress(job.user, "Scan", job.pages, page, job.arrival_time, f"(Peterson's Sync) | Total Processed Pages: {total_processed_pages}")
+
+def run_jobs_peterson(jobs):
+    global total_processed_pages
+    total_processed_pages = 0
+    threads = []
+    user_id = 0
+    for job in jobs:
+        if job.job_type == 'Print':
+            t = threading.Thread(target=peterson_print_job, args=(job, user_id))
+            user_id = 1 - user_id
+        else:
+            t = threading.Thread(target=peterson_scan_job, args=(job,))
+        threads.append(t)
+        t.start()
+        time.sleep(job.arrival_time)
+
+    for t in threads:
+        t.join()
+```
+
+### Output
+```
+[1731683613.3516147] P1 (Scan): Page 4/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 24
+[1731683615.3509889] P2 (Scan): Page 1/1 at Arrival Time 1 (Peterson's Sync) | Total Processed Pages: 25
+[1731683616.3519135] P5 (Print): Page 1/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 26
+[1731683617.3523438] P5 (Print): Page 2/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 27
+[1731683618.3527744] P5 (Print): Page 3/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 28
+[1731683619.3532045] P5 (Print): Page 4/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 29
+[1731683621.361505] P3 (Print): Page 1/1 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 30
+[1731683624.3623009] P4 (Scan): Page 1/3 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 31
+[1731683625.3627322] P4 (Scan): Page 2/3 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 32
+```
+
+## Conclusion
+
+In this project, we implemented two versions of the process execution: one without synchronization and one with synchronization. We demonstrated the issues that can arise when multiple users try to access shared resources concurrently and showed how synchronization mechanisms can prevent race conditions and deadlocks.
