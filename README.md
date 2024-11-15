@@ -53,14 +53,15 @@ def run_jobs_unsynchronized(jobs):
 ### Output
 
 ```
-[1731606016.3064065] P1 (Scan): Page 0/4 at Arrival Time 3 (No Sync) - Job Start
-[1731606017.3068378] P1 (Scan): Page 1/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 1
-[1731606018.3072708] P1 (Scan): Page 2/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 2
-[1731606019.3072076] P2 (Print): Page 0/4 at Arrival Time 4 (No Sync) - Job Start
-[1731606019.3077033] P1 (Scan): Page 3/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 3
-[1731606020.3076403] P2 (Print): Page 1/4 at Arrival Time 4 (No Sync) | Total Processed Pages: 4
-[1731606020.3081362] P1 (Scan): Page 4/4 at Arrival Time 3 (No Sync) | Total Processed Pages: 5
-[1731606020.3081362] P1 (Scan): Page 4/4 at Arrival Time 3 (No Sync) - Job Completed
+1731704138.52896] P1 (Scan): Page 5/48 at Arrival Time 1 (No Sync) | Total Processed Pages: 60
+[1731704138.5716166] P4 (Print): Page 10/11 at Arrival Time 5 (No Sync) | Total Processed Pages: 61
+[1731704138.5716166] P1 (Scan): Page 17/24 at Arrival Time 3 (No Sync) | Total Processed Pages: 62
+[1731704139.5283983] P5 (Print): Page 1/8 at Arrival Time 2 (No Sync) | Total Processed Pages: 63
+[1731704139.5293903] P1 (Scan): Page 6/48 at Arrival Time 1 (No Sync) | Total Processed Pages: 64
+[1731704139.5720463] P4 (Print): Page 11/11 at Arrival Time 5 (No Sync) | Total Processed Pages: 65
+[1731704139.5720463] P4 (Print): Page 11/11 at Arrival Time 5 (No Sync) - Job Completed
+[1731704139.5720463] P1 (Scan): Page 18/24 at Arrival Time 3 (No Sync) | Total Processed Pages: 66
+[1731704140.5283325] P3 (Scan): Page 0/3 at Arrival Time 4 (No Sync) - Job Start
 
 ```
 
@@ -115,14 +116,17 @@ def run_jobs_synchronized(jobs):
 
 ### Output
 ```
-1731680227.981762] P3 (Scan): Page 2/5 at Arrival Time 1 (Sync) | Total Processed Pages: 6
-[1731680228.9821935] P3 (Scan): Page 3/5 at Arrival Time 1 (Sync) | Total Processed Pages: 7
-[1731680229.9826224] P3 (Scan): Page 4/5 at Arrival Time 1 (Sync) | Total Processed Pages: 8
-[1731680230.9830532] P3 (Scan): Page 5/5 at Arrival Time 1 (Sync) | Total Processed Pages: 9
-[1731680230.9830532] P3 (Scan): Page 5/5 at Arrival Time 1 (Sync) - Job Completed
-[1731680231.983483] P4 (Print): Page 1/2 at Arrival Time 2 (Sync) | Total Processed Pages: 10
-[1731680232.988378] P4 (Print): Page 2/2 at Arrival Time 2 (Sync) | Total Processed Pages: 11
-[1731680232.988378] P4 (Print): Page 2/2 at Arrival Time 2 (Sync) - Job Completed
+[1731704349.0067] P2 (Scan): Page 8/10 at Arrival Time 1 (Sync) | Total Processed Pages: 36
+[1731704350.0071309] P2 (Scan): Page 9/10 at Arrival Time 1 (Sync) | Total Processed Pages: 37
+[1731704351.0075607] P2 (Scan): Page 10/10 at Arrival Time 1 (Sync) | Total Processed Pages: 38
+[1731704351.0075607] P2 (Scan): Page 10/10 at Arrival Time 1 (Sync) - Job Completed
+[1731704352.0079908] P5 (Print): Page 1/5 at Arrival Time 1 (Sync) | Total Processed Pages: 39
+[1731704353.008421] P5 (Print): Page 2/5 at Arrival Time 1 (Sync) | Total Processed Pages: 40
+[1731704354.0088513] P5 (Print): Page 3/5 at Arrival Time 1 (Sync) | Total Processed Pages: 41
+[1731704355.0092819] P5 (Print): Page 4/5 at Arrival Time 1 (Sync) | Total Processed Pages: 42
+[1731704356.0097125] P5 (Print): Page 5/5 at Arrival Time 1 (Sync) | Total Processed Pages: 43
+[1731704356.0097125] P5 (Print): Page 5/5 at Arrival Time 1 (Sync) - Job Completed
+
 ```
 
 By looking at this output, we can see that the jobs are being processed sequentially due to the synchronization mechanism. This ensures that only one job can access the printer or scanner at a time, preventing race conditions and deadlocks.
@@ -172,17 +176,15 @@ def run_jobs_mutex(jobs):
 ### Output
 
 ```
-[1731680285.0360494] P2 (Print): Page 2/3 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 15
-[1731680285.0360494] P3 (Scan): Page 3/5 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 16
-[1731680286.0364795] P3 (Scan): Page 4/5 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 17
-[1731680286.0364795] P2 (Print): Page 3/3 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 18
-[1731680287.03691] P3 (Scan): Page 5/5 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 19
-[1731680288.0373404] P4 (Scan): Page 1/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 20
-[1731680289.0362825] P4 (Print): Page 1/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 21
-[1731680289.0377707] P4 (Scan): Page 2/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 22
-[1731680290.036713] P4 (Print): Page 2/2 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 23
-[1731680291.036647] P5 (Scan): Page 1/4 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 24
-[1731680292.0370777] P5 (Scan): Page 2/4 at Arrival Time 3 (Mutex Sync) | Total Processed Pages: 25
+[1731704993.1866019] P3 (Print): Page 1/2 at Arrival Time 4 (Mutex Sync) | Total Processed Pages: 57
+[1731704994.1855438] P1 (Scan): Page 21/24 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 58
+[1731704994.1870332] P3 (Print): Page 2/2 at Arrival Time 4 (Mutex Sync) | Total Processed Pages: 59
+[1731704995.1859744] P1 (Scan): Page 22/24 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 60
+[1731704995.1874619] P5 (Print): Page 1/8 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 61
+[1731704996.186404] P1 (Scan): Page 23/24 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 62
+[1731704996.1878922] P5 (Print): Page 2/8 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 63
+[1731704997.1868343] P1 (Scan): Page 24/24 at Arrival Time 2 (Mutex Sync) | Total Processed Pages: 64
+[1731704997.1883228] P5 (Print): Page 3/8 at Arrival Time 1 (Mutex Sync) | Total Processed Pages: 65
 ```
 
 ## Semaphore Syncronization
@@ -303,15 +305,15 @@ def run_jobs_peterson(jobs):
 
 ### Output
 ```
-[1731683613.3516147] P1 (Scan): Page 4/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 24
-[1731683615.3509889] P2 (Scan): Page 1/1 at Arrival Time 1 (Peterson's Sync) | Total Processed Pages: 25
-[1731683616.3519135] P5 (Print): Page 1/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 26
-[1731683617.3523438] P5 (Print): Page 2/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 27
-[1731683618.3527744] P5 (Print): Page 3/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 28
-[1731683619.3532045] P5 (Print): Page 4/4 at Arrival Time 5 (Peterson's Sync) | Total Processed Pages: 29
-[1731683621.361505] P3 (Print): Page 1/1 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 30
-[1731683624.3623009] P4 (Scan): Page 1/3 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 31
-[1731683625.3627322] P4 (Scan): Page 2/3 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 32
+[1731706039.8708134] P5 (Print): Page 3/9 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 73
+[1731706039.9179335] P5 (Print): Page 7/8 at Arrival Time 1 (Peterson's Sync) | Total Processed Pages: 74
+[1731706040.1956928] P1 (Scan): Page 3/48 at Arrival Time 4 (Peterson's Sync) | Total Processed Pages: 75
+[1731706040.8712435] P5 (Print): Page 4/9 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 76
+[1731706040.9183633] P5 (Print): Page 8/8 at Arrival Time 1 (Peterson's Sync) | Total Processed Pages: 77
+[1731706041.196123] P1 (Scan): Page 4/48 at Arrival Time 4 (Peterson's Sync) | Total Processed Pages: 78
+[1731706041.871674] P5 (Print): Page 5/9 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 79
+[1731706042.196553] P1 (Scan): Page 5/48 at Arrival Time 4 (Peterson's Sync) | Total Processed Pages: 80
+[1731706042.8721042] P5 (Print): Page 6/9 at Arrival Time 3 (Peterson's Sync) | Total Processed Pages: 81
 ```
 
 ## Conclusion
